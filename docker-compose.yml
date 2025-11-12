@@ -1,0 +1,74 @@
+# Docker Compose 配置文件
+# 这个文件用来定义和运行多个 Docker 容器
+# 简单理解：就像一个配置文件，告诉 Docker 如何启动你的服务
+
+version: '3.8'  # Docker Compose 的版本号
+
+# services: 定义你要运行的服务（容器）
+services:
+  # postgres: 这是服务的名称，你可以随便起名字
+  postgres:
+    # image: 指定要使用的 Docker 镜像
+    # postgres:15-alpine 是 PostgreSQL 数据库的镜像
+    # 15 是版本号，alpine 是轻量级的 Linux 系统
+    image: postgres:15-alpine
+    
+    # container_name: 容器的名称，方便你识别和管理
+    container_name: vrf-node-postgres
+    
+    # environment: 设置环境变量，相当于给容器传递配置参数
+    environment:
+      # POSTGRES_USER: 数据库的用户名
+      POSTGRES_USER: guoshijiang
+      
+      # POSTGRES_PASSWORD: 数据库的密码
+      # ${POSTGRES_PASSWORD:-} 表示从环境变量读取，如果没有就使用空字符串
+      # 如果你想设置密码，可以在 .env 文件中设置
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      
+      # POSTGRES_DB: 数据库的名称
+      POSTGRES_DB: vrf_node
+      
+      # POSTGRES_HOST_AUTH_METHOD: 允许无密码连接（仅用于开发环境）
+      # trust 表示信任所有连接，不需要密码验证
+      # ⚠️ 注意：生产环境不要使用 trust，应该设置密码
+      POSTGRES_HOST_AUTH_METHOD: trust
+    
+    # ports: 端口映射
+    # 格式: "主机端口:容器端口"
+    # "5432:5432" 表示把容器的 5432 端口映射到主机的 5432 端口
+    # 这样你就可以通过 localhost:5432 访问数据库
+    ports:
+      - "5432:5432"
+    
+    # volumes: 数据卷，用来持久化数据
+    # 格式: "卷名:容器内路径"
+    # postgres_data 是卷的名字，数据会保存在这里
+    # /var/lib/postgresql/data 是 PostgreSQL 存储数据的位置
+    # 即使容器被删除，数据也不会丢失（除非你删除卷）
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    
+    # healthcheck: 健康检查
+    # Docker 会自动检查容器是否正常运行
+    healthcheck:
+      # test: 执行的检查命令
+      # pg_isready 是 PostgreSQL 的命令，用来检查数据库是否准备好
+      test: ["CMD-SHELL", "pg_isready -U guoshijiang -d vrf_node"]
+      # interval: 每 10 秒检查一次
+      interval: 10s
+      # timeout: 每次检查的超时时间
+      timeout: 5s
+      # retries: 失败后重试 5 次
+      retries: 5
+    
+    # restart: 重启策略
+    # unless-stopped 表示除非手动停止，否则总是自动重启
+    # 如果容器崩溃了，Docker 会自动重启它
+    restart: unless-stopped
+
+# volumes: 定义数据卷
+# 数据卷用来持久化存储数据，即使容器删除，数据也不会丢失
+volumes:
+  # postgres_data: 这是卷的名字，上面 services 中引用了它
+  postgres_data:

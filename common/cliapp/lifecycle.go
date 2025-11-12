@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"os"
 
-	"github.com/the-web3/dapplink-vrf/common/opio"
+	"github.com/WJX2001/vrf-node-new/common/opio"
 )
 
 var interruptErr = errors.New("interrupt signal")

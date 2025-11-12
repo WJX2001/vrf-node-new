@@ -1,7 +1,24 @@
 package main
 
-import "fmt"
+import (
+	"context"
+	"os"
+
+	"github.com/WJX2001/vrf-node-new/common/opio"
+	"github.com/ethereum/go-ethereum/log"
+)
+
+var (
+	GitCommit = ""
+	GitData   = ""
+)
 
 func main() {
-	fmt.Println("hello world")
+	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, log.LevelInfo, true)))
+	app := NewCli(GitCommit, GitData)
+	ctx := opio.WithInterruptBlocker(context.Background())
+	if err := app.RunContext(ctx, os.Args); err != nil {
+		log.Error("Application failed", err)
+		os.Exit(1)
+	}
 }
