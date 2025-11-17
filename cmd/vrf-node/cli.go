@@ -24,13 +24,17 @@ func runDappLinkVrfNode(ctx *cli.Context, shutdown context.CancelCauseFunc) (cli
 
 func runMigrations(ctx *cli.Context) error {
 	log.Info("Running migrations...")
-	cfg, err := config.LoadConfig(ctx)
-	if err != nil {
-		log.Error("failed to load config", "err", err)
-		return err
+	// 只加载数据库配置，不需要链配置
+	migrationsDir := ctx.String(flag2.MigrationsFlag.Name)
+	dbConfig := config.DBConfig{
+		Host:     ctx.String(flag2.MasterDbHostFlag.Name),
+		Port:     ctx.Int(flag2.MasterDbPortFlag.Name),
+		Name:     ctx.String(flag2.MasterDbNameFlag.Name),
+		User:     ctx.String(flag2.MasterDbUserFlag.Name),
+		Password: ctx.String(flag2.MasterDbPasswordFlag.Name),
 	}
 	ctx.Context = opio.CancelOnInterrupt(ctx.Context)
-	db, err := database.NewDB(ctx.Context, cfg.MasterDB)
+	db, err := database.NewDB(ctx.Context, dbConfig)
 	if err != nil {
 		log.Error("failed to connect to database", "err", err)
 		return err
@@ -41,11 +45,20 @@ func runMigrations(ctx *cli.Context) error {
 			return
 		}
 	}(db)
-	return db.ExecuteSQLMigration(cfg.Migrations)
+	return db.ExecuteSQLMigration(migrationsDir)
 }
 
 func NewCli(GitCommit string, GitDate string) *cli.App {
 	flags := flag2.Flags
+	// migrate 命令只需要数据库相关的 flags
+	migrateFlags := []cli.Flag{
+		flag2.MigrationsFlag,
+		flag2.MasterDbHostFlag,
+		flag2.MasterDbPortFlag,
+		flag2.MasterDbUserFlag,
+		flag2.MasterDbPasswordFlag,
+		flag2.MasterDbNameFlag,
+	}
 	return &cli.App{
 		Version:              "v0.0.1",
 		Description:          "An indexer of all optimism events with a serving api layer",
@@ -59,7 +72,7 @@ func NewCli(GitCommit string, GitDate string) *cli.App {
 			},
 			{
 				Name:        "migrate",
-				Flags:       flags,
+				Flags:       migrateFlags,
 				Description: "Runs the database migrations",
 				Action:      runMigrations,
 			},

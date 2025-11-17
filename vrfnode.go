@@ -2,6 +2,7 @@ package vrf_node
 
 import (
 	"context"
+	"math/big"
 	"sync/atomic"
 
 	"github.com/WJX2001/vrf-node-new/config"
@@ -9,6 +10,7 @@ import (
 	"github.com/WJX2001/vrf-node-new/event"
 	"github.com/WJX2001/vrf-node-new/synchronizer"
 	"github.com/WJX2001/vrf-node-new/synchronizer/node"
+	"github.com/WJX2001/vrf-node-new/worker"
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -16,8 +18,11 @@ type VrfNode struct {
 	db           *database.DB
 	synchronizer *synchronizer.Synchronizer
 	eventsParser *event.EventsParser
+	worker       *worker.Worker
 	stopped      atomic.Bool
 }
+
+const BlockSize = 3000
 
 func NewVrfNode(ctx context.Context, cfg *config.Config, shutdown context.CancelCauseFunc) (*VrfNode, error) {
 	ethClient, err := node.DialEthClient(ctx, cfg.Chain.ChainRpcUrl)
@@ -46,8 +51,8 @@ func NewVrfNode(ctx context.Context, cfg *config.Config, shutdown context.Cancel
 		DappLinkVrfAddress:        cfg.Chain.DappLinkVrfContractAddress,
 		DappLinkVrfFactoryAddress: cfg.Chain.DappLinkVrfFactoryContractAddress,
 		EventLoopInterval:         cfg.Chain.EventInterval,
-		StartHeight:               nil, // TODO: 根据需要设置
-		BlockSize:                 0,   // TODO: 根据需要设置
+		StartHeight:               big.NewInt(int64(cfg.Chain.StartingHeight)),
+		BlockSize:                 BlockSize,
 	}
 
 	eventsParser, err := event.NewEventsParser(db, epConfig, shutdown)
@@ -55,10 +60,22 @@ func NewVrfNode(ctx context.Context, cfg *config.Config, shutdown context.Cancel
 		log.Error("new events parser fail", "err", err)
 		return nil, err
 	}
+
+	workConf := &worker.WorkerConfig{
+		LoopInternal: cfg.Chain.CallInterval,
+	}
+
+	workerF, err := worker.NewWorker(db, workConf, shutdown)
+	if err != nil {
+		log.Error("new worker fail", "err", err)
+		return nil, err
+	}
+
 	return &VrfNode{
 		db:           db,
 		synchronizer: syncer,
 		eventsParser: eventsParser,
+		worker:       workerF,
 	}, nil
 }
 
@@ -67,15 +84,31 @@ func (vn *VrfNode) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// err = vn.eventsParser.Start()
-	// if err != nil {
-	// 	return err
-	// }
+	err = vn.eventsParser.Start()
+	if err != nil {
+		return err
+	}
+
+	err = vn.worker.Start()
+	if err != nil {
+		return err
+	}
 	return err
 }
 
 func (vn *VrfNode) Stop(ctx context.Context) error {
-	err := vn.eventsParser.Close()
+
+	err := vn.synchronizer.Close()
+	if err != nil {
+		return err
+	}
+
+	err = vn.eventsParser.Close()
+	if err != nil {
+		return err
+	}
+
+	err = vn.worker.Close()
 	if err != nil {
 		return err
 	}
