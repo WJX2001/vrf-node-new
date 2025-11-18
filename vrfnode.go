@@ -19,6 +19,7 @@ type VrfNode struct {
 	synchronizer *synchronizer.Synchronizer
 	eventsParser *event.EventsParser
 	worker       *worker.Worker
+	shutdown     context.CancelCauseFunc
 	stopped      atomic.Bool
 }
 
@@ -93,7 +94,7 @@ func (vn *VrfNode) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 func (vn *VrfNode) Stop(ctx context.Context) error {

@@ -39,34 +39,22 @@ func NewDappLinkVrfManager() (*DappLinkVrfManager, error) {
 	}, nil
 }
 
-func (dvm *DappLinkVrfManager) ProcessDappLinkVrfManagerEvent(
-	db *database.DB,
-	dappLinkVrfAddress string,
-	startBlock, endBlock *big.Int) ([]worker.RequestSend, []worker.FillRandomWords, error) {
-
+func (dvm *DappLinkVrfManager) ProcessDappLinkVrfManagerEvent(db *database.DB, dappLinkVrfAddress string, startBlock, endBlock *big.Int) ([]worker.RequestSend, []worker.FillRandomWords, error) {
 	var requestSendList []worker.RequestSend
 	var fillRandomWordsList []worker.FillRandomWords
 
-	// 构建过滤器：按合约地址过滤
-	contractFilter := event.ContractEvent{ContractAddress: common.HexToAddress(dappLinkVrfAddress)}
-	// 从 contract_events 表查询指定区块范围内该合约的所有事件
-	contractEventList, err := db.ContractEvent.ContractEventsWithFilter(contractFilter, startBlock, endBlock)
-
+	contractFiler := event.ContractEvent{ContractAddress: common.HexToAddress(dappLinkVrfAddress)}
+	contractEventList, err := db.ContractEvent.ContractEventsWithFilter(contractFiler, startBlock, endBlock)
 	if err != nil {
 		log.Error("Query contracts event list fail", "err", err)
 		return requestSendList, fillRandomWordsList, err
 	}
-
-	// 遍历每个事件
-	// 记录日志用于调试
 	for _, contractEvent := range contractEventList {
 		log.Info("==========================================")
 		log.Info("DappLink Vrf Manager Contracts EventList", "contractEventListLength", len(contractEventList))
 		log.Info("DappLink Vrf Manager Contracts EventList", "contractEvent.EventSignature.String()", contractEvent.EventSignature.String(), "dvm.DappLinkVrfAbi.Events[RequestSent].ID.String()", dvm.DappLinkVrfAbi.Events["RequestSent"].ID.String())
 		log.Info("==========================================")
-
 		if contractEvent.EventSignature.String() == dvm.DappLinkVrfAbi.Events["RequestSent"].ID.String() {
-			// 将 RLP 日志解析为结构化数据
 			requestSent, errParse := dvm.DappLinkVrfFilter.ParseRequestSent(*contractEvent.RLPLog)
 			if errParse != nil {
 				log.Error("Parse request send event fail", "errParse", errParse)
@@ -74,10 +62,10 @@ func (dvm *DappLinkVrfManager) ProcessDappLinkVrfManagerEvent(
 			}
 			log.Info("Parse Request Sent event success", "RequestId", requestSent.RequestId, "NumWords", requestSent.NumWords)
 			rs := worker.RequestSend{
-				GUID:       uuid.New(),            // 生成唯一 ID
-				RequestId:  requestSent.RequestId, // 请求 ID
-				VrfAddress: requestSent.Current,   // VRF 合约地址
-				NumWords:   requestSent.NumWords,  //
+				GUID:       uuid.New(),
+				RequestId:  requestSent.RequestId,
+				VrfAddress: requestSent.Current,
+				NumWords:   requestSent.NumWords,
 				Status:     0,
 				Timestamp:  uint64(time.Now().Unix()),
 			}

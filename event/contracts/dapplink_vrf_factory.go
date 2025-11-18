@@ -35,13 +35,11 @@ func NewDappLinkVrfFactory() (*DappLinkVrfFactory, error) {
 		log.Error("get dapplink vrf factory abi fail", "err", err)
 		return nil, err
 	}
-
 	dappLinkVrfFactoryFilterer, err := vrf.NewDappLinkVRFFactoryFilterer(common.Address{}, nil)
 	if err != nil {
 		log.Error("new dapplink vrf factory filter fail", "err", err)
 		return nil, err
 	}
-
 	return &DappLinkVrfFactory{
 		DlVrfFactoryAbi:    dappLinkVrfFactoryAbi,
 		DlVrfFactoryFilter: dappLinkVrfFactoryFilterer,
@@ -50,15 +48,12 @@ func NewDappLinkVrfFactory() (*DappLinkVrfFactory, error) {
 
 func (dvff *DappLinkVrfFactory) ProcessDappLinkVrfFactoryEvent(db *database.DB, dappLinkVrfFactoryAddres string, startBlock, endBlock *big.Int) ([]worker.PoxyCreated, error) {
 	var proxyCreatedList []worker.PoxyCreated
-
-	contractFilter := event.ContractEvent{ContractAddress: common.HexToAddress(dappLinkVrfFactoryAddres)}
-	contractEventList, err := db.ContractEvent.ContractEventsWithFilter(contractFilter, startBlock, endBlock)
-
+	contactFilter := event.ContractEvent{ContractAddress: common.HexToAddress(dappLinkVrfFactoryAddres)}
+	contractEventList, err := db.ContractEvent.ContractEventsWithFilter(contactFilter, startBlock, endBlock)
 	if err != nil {
 		log.Error("query contacts event fail", "err", err)
 		return proxyCreatedList, err
 	}
-
 	for _, contractEvent := range contractEventList {
 		if contractEvent.EventSignature.String() == dvff.DlVrfFactoryAbi.Events["ProxyCreated"].ID.String() {
 			proxyCreated, err := dvff.DlVrfFactoryFilter.ParseProxyCreated(*contractEvent.RLPLog)

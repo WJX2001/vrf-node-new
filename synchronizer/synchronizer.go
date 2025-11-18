@@ -114,28 +114,24 @@ func (syncer *Synchronizer) processBatch(headers []types.Header, chainCfg *confi
 	log.Info("sync batch", "size", len(headers), "startBlock", firstHeader.Number, "endBlock", lastHead.Number)
 
 	headerMap := make(map[common.Hash]*types.Header, len(headers))
-
 	for i := range headers {
 		header := headers[i]
 		headerMap[header.Hash()] = &header
 	}
 	// var addressList []common.Address
+	// addressList = append(addressList, common.HexToAddress("0x2bf417A46a595Facd902111c13008Cb3ECD536b7"))
+	// addressList = append(addressList, common.HexToAddress("0x21EA59025C4a16E948224D100D97c3a24706C728"))
+
 	addressList, err := syncer.db.PoxyCreated.QueryPoxyCreatedAddressList()
 	if err != nil {
 		log.Error("QueryPoxyCreatedAddressList fail", "err", err)
 		return err
 	}
 
-	log.Info("Event listen address list", "addresses", addressList)
+	log.Info("Event listen address list ", "addresses", addressList)
 
-	filterQuery := ethereum.FilterQuery{
-		FromBlock: firstHeader.Number,
-		ToBlock:   lastHead.Number,
-		Addresses: addressList,
-	}
-
+	filterQuery := ethereum.FilterQuery{FromBlock: firstHeader.Number, ToBlock: lastHead.Number, Addresses: addressList}
 	logs, err := syncer.ethClient.FilterLogs(filterQuery)
-
 	if err != nil {
 		log.Error("filter logs fail", "err", err)
 		return err
@@ -148,7 +144,7 @@ func (syncer *Synchronizer) processBatch(headers []types.Header, chainCfg *confi
 	}
 
 	if len(logs.Logs) > 0 {
-		log.Info("detected logs", "size", len(logs.Logs))
+		log.Info("detected logs 66666", "size", len(logs.Logs))
 	}
 
 	blockHeaders := make([]common2.BlockHeader, 0, len(headers))
@@ -157,7 +153,6 @@ func (syncer *Synchronizer) processBatch(headers []types.Header, chainCfg *confi
 		if headers[i].Number == nil {
 			continue
 		}
-
 		bHeader := common2.BlockHeader{
 			Hash:       headers[i].Hash(),
 			ParentHash: headers[i].ParentHash,
@@ -169,14 +164,14 @@ func (syncer *Synchronizer) processBatch(headers []types.Header, chainCfg *confi
 	}
 
 	chainContractEvent := make([]event.ContractEvent, len(logs.Logs))
+	// log.Info("event logs.Logs length", len(logs.Logs))
 	for i := range logs.Logs {
 		logEvent := logs.Logs[i]
 		if _, ok := headerMap[logEvent.BlockHash]; !ok {
 			continue
 		}
-
 		timestamp := headerMap[logEvent.BlockHash].Time
-		log.Info("event logs", "address", logs.Logs[i].Address, "timestamp", timestamp)
+		log.Info("event logs wjxhhhsss", "address", logs.Logs[i].Address, "timestamp", timestamp)
 		chainContractEvent[i] = event.ContractEventFromLog(&logs.Logs[i], timestamp)
 	}
 
@@ -186,7 +181,6 @@ func (syncer *Synchronizer) processBatch(headers []types.Header, chainCfg *confi
 			if err := tx.Blocks.StoreBlockHeaders(blockHeaders); err != nil {
 				return err
 			}
-
 			if err := tx.ContractEvent.StoreContractEvents(chainContractEvent); err != nil {
 				return err
 			}
