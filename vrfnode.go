@@ -5,12 +5,15 @@ import (
 	"math/big"
 	"sync/atomic"
 
+	clien2 "github.com/WJX2001/vrf-node-new/client"
+	common2 "github.com/WJX2001/vrf-node-new/common"
 	"github.com/WJX2001/vrf-node-new/config"
 	"github.com/WJX2001/vrf-node-new/database"
 	"github.com/WJX2001/vrf-node-new/event"
 	"github.com/WJX2001/vrf-node-new/synchronizer"
 	"github.com/WJX2001/vrf-node-new/synchronizer/node"
 	"github.com/WJX2001/vrf-node-new/worker"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -32,6 +35,7 @@ func NewVrfNode(ctx context.Context, cfg *config.Config, shutdown context.Cancel
 		return nil, err
 	}
 
+	callEthClient, err := clien2.EthClientWithTimeout(context.Background(), cfg.Chain.ChainRpcUrl)
 	if err != nil {
 		log.Error("new eth syncer client fail", "err", err)
 		return nil, err
@@ -57,13 +61,22 @@ func NewVrfNode(ctx context.Context, cfg *config.Config, shutdown context.Cancel
 	}
 
 	eventsParser, err := event.NewEventsParser(db, epConfig, shutdown)
+
+	ecdsaPrivteKey, _ := common2.ParsePrivateKeyStr(cfg.Chain.PrivateKey)
 	if err != nil {
 		log.Error("new events parser fail", "err", err)
 		return nil, err
 	}
 
 	workConf := &worker.WorkerConfig{
-		LoopInternal: cfg.Chain.CallInterval,
+		ChainClient:               callEthClient,
+		ChainId:                   big.NewInt(int64(cfg.Chain.ChainId)),
+		DappLinkVrfManagerAddress: common.HexToAddress(cfg.Chain.DappLinkVrfContractAddress),
+		CallerAddress:             common.HexToAddress(cfg.Chain.CallerAddress),
+		PrivateKey:                ecdsaPrivteKey,
+		NumConfirmations:          cfg.Chain.NumConfirmations,
+		SafeAbortNonceToLowCount:  cfg.Chain.SafeAbortNonceTooLowCount,
+		LoopInternal:              cfg.Chain.CallInterval,
 	}
 
 	workerF, err := worker.NewWorker(db, workConf, shutdown)
