@@ -49,6 +49,7 @@ type Node struct {
 
 func NewNode(ctx context.Context, db *database.DB, privKey *ecdsa.PrivateKey, keyPairs *sign.KeyPair, shouldRegister bool, cfg *config.Config, shutdown context.CancelCauseFunc) (*Node, error) {
 	from := crypto.PubkeyToAddress(privKey.PublicKey)
+	// 拿到压缩的公钥
 	pubKey := crypto.CompressPubkey(&privKey.PublicKey)
 	pubkeyHex := hex.EncodeToString(pubKey)
 

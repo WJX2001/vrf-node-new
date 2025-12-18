@@ -35,7 +35,7 @@ func NewVrfNode(ctx context.Context, cfg *config.Config, shutdown context.Cancel
 		return nil, err
 	}
 
-	callEthClient, err := clien2.EthClientWithTimeout(context.Background(), cfg.Chain.ChainRpcUrl)
+	callEthClient, err := clien2.DialEthClientWithTimeout(context.Background(), cfg.Chain.ChainRpcUrl, false)
 	if err != nil {
 		log.Error("new eth syncer client fail", "err", err)
 		return nil, err
