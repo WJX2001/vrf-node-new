@@ -9,7 +9,7 @@ import (
 
 	"github.com/WJX2001/vrf-node-new/common/tasks"
 	"github.com/WJX2001/vrf-node-new/database"
-	"github.com/WJX2001/vrf-node-new/node"
+	// "github.com/WJX2001/vrf-node-new/node"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"

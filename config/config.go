@@ -16,10 +16,10 @@ const (
 )
 
 type Config struct {
-	Migrations string
-	Chain      ChainConfig
-	// Node           NodeConfig
-	// Manager        ManagerConfig
+	Migrations     string
+	Chain          ChainConfig
+	Node           NodeConfig
+	Manager        ManagerConfig
 	MasterDB       DBConfig
 	SlaveDB        DBConfig
 	SlaveDbEnable  bool
@@ -48,19 +48,19 @@ type ChainConfig struct {
 	Passphrase                        string
 }
 
-// type NodeConfig struct {
-// 	KeyPath          string
-// 	WsAddr           string
-// 	SignTimeOut      time.Duration
-// 	WaitScanInterval time.Duration
-// }
+type NodeConfig struct {
+	KeyPath          string
+	WsAddr           string
+	SignTimeOut      time.Duration
+	WaitScanInterval time.Duration
+}
 
-// type ManagerConfig struct {
-// 	WsAddr      string
-// 	HttpAddr    string
-// 	SignTimeOut time.Duration
-// 	NodeMembers string
-// }
+type ManagerConfig struct {
+	WsAddr      string
+	HttpAddr    string
+	SignTimeOut time.Duration
+	NodeMembers string
+}
 
 type DBConfig struct {
 	Host     string
